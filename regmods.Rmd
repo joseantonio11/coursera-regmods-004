@@ -1,0 +1,119 @@
+
+
+Relationship between a set of variables and miles per gallon
+========================================================
+
+## Summary
+You work for Motor Trend, a magazine about the automobile industry. Looking at a data set of a collection of cars, they are interested in exploring the relationship between a set of variables and miles per gallon (MPG) (outcome). They are particularly interested in the following two questions:
+
+- Is an automatic or manual transmission better for MPG
+- Quantify the MPG difference between automatic and manual transmissions
+
+The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973–74 models).
+
+We are interested in two question: "Is an automatic or manual transmission better for MPG?" and "Quantifying how different is the MPG between automatic and manual transmissions?" 
+I used some basic data wrangling and regression models to answer the questions. 
+After the data analysis I can say there is a significant relationship between the fuel consumption and the transmission type so the manual transmission is better for MPG. 
+After inspect other variables I found two cofounding variables 'weight' and 'quarter-mile time'. With these variables we can model what varable values can produce the best Mpg.
+
+
+### Loading the dataset
+```{r}
+data(mtcars)
+```
+### Description for the mtcars dataset
+```{r results='hide'}
+?mtcars
+```
+### Converting transmission values to factors
+```{r}
+cars<-transform(mtcars, am=factor(am))
+levels(cars$am)[1] <- "Automatic"
+levels(cars$am)[2] <- "Manual"
+```
+### Calculating the mean of each transmission types
+```{r}
+automean<-mean(cars$mpg[cars$am=="Automatic"])
+manualmean<-mean(cars$mpg[cars$am=="Manual"])
+```
+The mean for manual transmission is `r manualmean` mpg and `r automean` mpg for automatic transmission. This is a significant difference in the means. Manual transmissions have a higher value so based on mean of mpg it is better (cheaper) to have manual 
+transmission.
+
+
+### Regression model for how transmission type affects the car's fuel consumption
+
+Let's make a simple linear regression model with mpg as depending variable and am as explanatory variable. We get following model: 
+mpg = 17.147 + 7.245 * am. Since manual transmission is denoted with am = 1, we can conclude that we can make more mpg with manual 
+transmission.
+
+See the boxplot as fig 2 for visual explanation.
+```{r}
+fit1 <- lm(mpg~am, data=mtcars)
+summary(fit1)
+coef(fit1)
+```
+### Finding the best model
+
+Let's fit a model with all explanatory variables. R-squared = 0.869
+```{r}
+fitAll<-lm(mpg~.,mtcars)
+summary(fitAll)
+coef(fitAll)
+```
+
+P values are high so we can use only those variables with low p values, for example p, wt, qsec and am. Actually, we got 0.8579 R-squared which is lower than fitAll model, but...
+```{r}
+fit2<-lm(mpg~hp+wt+qsec+am,mtcars)
+summary(fit2)
+coef(fit2)
+```
+
+...with a little experimenting, I got the following model with 0.8942 R-squared:
+```{r}
+fit3<-lm(mpg~hp*wt+qsec+am,mtcars)
+summary(fit3)
+coef(fit3)
+```
+### Comparing models
+We got 3 models, the third one combining variables describes mpg the best.
+
+See fig 3, 4 and 5 for visual explanation.
+```{r}
+anova(fit1, fitAll, fit3)
+
+```
+
+## Appendix
+
+### Figure 1
+```{r}
+pairs(mtcars, panel=panel.smooth, main="Cars summary",col=mtcars$am)
+
+```
+
+### Figure 2
+```{r}
+plot(cars$am , cars$mpg, main="MPG vs Transmission", xlab="Transmission", ylab="MPG", )
+abline(lm(mpg ~ am, cars), col="red")
+```
+
+### Figure 3
+```{r}
+layout(matrix(c(1,2,3,4),2,2))
+plot(fit1)
+```
+
+### Figure 4
+```{r}
+layout(matrix(c(1,2,3,4),2,2))
+plot(fitAll)
+```
+
+### Figure 5
+```{r}
+layout(matrix(c(1,2,3,4),2,2))
+plot(fit3)
+```
+
+
+
